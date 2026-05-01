@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kickers — CEO Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     DESIGN TOKENS
+  ============================================================ */
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface2: #181818;
+    --border: #242424;
+    --accent: #e8c84a;
+    --accent2: #ff5c35;
+    --accent3: #4ac9e8;
+    --text: #f0ece4;
+    --muted: #6b6b6b;
+    --green: #3ddc84;
+    --red: #ff4d4d;
+    --amber: #ffaa00;
+    --sidebar-w: 224px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ============================================================
+     PASSWORD GATE
+  ============================================================ */
+  #gate {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    flex-direction: column;
+    gap: 0;
+  }
+  .gate-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 52px;
+    letter-spacing: 6px;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .gate-sub {
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 40px;
+  }
+  .gate-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px 36px;
+    width: 340px;
+    text-align: center;
+  }
+  .gate-label {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .gate-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    letter-spacing: 4px;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .gate-input:focus { border-color: var(--accent); }
+  .gate-btn {
+    margin-top: 14px;
+    width: 100%;
+    padding: 12px;
+    background: var(--accent);
+    color: #000;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 3px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .gate-btn:hover { opacity: 0.88; }
+  .gate-error {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--red);
+    min-height: 18px;
+  }
+
+  /* ============================================================
+     LOADING OVERLAY
+  ============================================================ */
+  #loading {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+    z-index: 8888;
+  }
+  .spinner {
+    width: 36px; height: 36px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text {
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ============================================================
+     APP SHELL
+  ============================================================ */
+  #app { display: none; height: 100vh; overflow: hidden; }
+
+  /* ---- SIDEBAR ---- */
+  .sidebar {
+    position: fixed; left:0; top:0; bottom:0;
+    width: var(--sidebar-w);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    z-index: 100;
+    overflow-y: auto;
+  }
+  .logo {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .logo-wordmark {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px; letter-spacing: 3px;
+    color: var(--accent); line-height: 1;
+  }
+  .logo-sub { font-size: 10px; color: var(--muted); letter-spacing: 3px; text-transform: uppercase; margin-top: 3px; }
+
+  .nav { padding: 12px 0; flex: 1; }
+  .nav-section { padding: 10px 20px 4px; font-size: 9px; color: var(--muted); letter-spacing: 3px; text-transform: uppercase; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 20px; cursor: pointer;
+    color: var(--muted); font-size: 13px;
+    transition: all 0.15s;
+    border-left: 2px solid transparent;
+  }
+  .nav-item:hover { color: var(--text); background: var(--surface2); }
+  .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(232,200,74,0.06); }
+  .nav-icon { font-size: 14px; width: 18px; text-align: center; }
+
+  .sidebar-footer {
+    padding: 14px 16px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .sync-row {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 2.5s infinite; flex-shrink: 0; }
+  .sync-dot.error { background: var(--red); animation: none; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .refresh-btn {
+    width: 100%; padding: 8px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--muted);
+    font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+    cursor: pointer; font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+  }
+  .refresh-btn:hover { color: var(--text); border-color: #333; }
+
+  /* ---- TOPBAR ---- */
+  .main { margin-left: var(--sidebar-w); min-height: 100vh; display: flex; flex-direction: column; }
+  .topbar {
+    position: sticky; top: 0;
+    background: rgba(10,10,10,0.95);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 28px;
+    display: flex; align-items: center; justify-content: space-between;
+    z-index: 50; flex-shrink: 0;
+  }
+  .page-title { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px; }
+  .topbar-right { display: flex; align-items: center; gap: 14px; }
+  .period-toggle { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .period-btn {
+    padding: 6px 12px; font-size: 11px; font-weight: 600;
+    cursor: pointer; color: var(--muted);
+    transition: all 0.15s; background: transparent;
+    border: none; font-family: 'DM Sans', sans-serif; letter-spacing: 0.5px;
+  }
+  .period-btn.active { background: var(--accent); color: #000; }
+  .last-updated { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); }
+
+  /* ---- CONTENT ---- */
+  .content { padding: 22px 28px; flex: 1; overflow-y: auto; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ---- SHARED COMPONENTS ---- */
+  .alert-bar {
+    background: rgba(255,77,77,0.07);
+    border: 1px solid rgba(255,77,77,0.22);
+    border-radius: 8px; padding: 12px 16px;
+    margin-bottom: 20px; display: flex; align-items: center; gap: 12px;
+  }
+  .alert-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); animation: pulse 2s infinite; flex-shrink: 0; }
+  .alert-text { font-size: 13px; color: #ff8080; }
+  .alert-text strong { color: var(--red); }
+
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 13px; margin-top: 26px; }
+  .section-header:first-child { margin-top: 0; }
+  .section-title { font-family: 'Bebas Neue', sans-serif; font-size: 15px; letter-spacing: 2px; color: var(--muted); }
+  .section-hint { font-size: 11px; color: var(--accent); opacity: 0.7; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 11px; }
+  .kpi-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 17px 19px;
+    transition: border-color 0.2s;
+  }
+  .kpi-card:hover { border-color: #2e2e2e; }
+  .kpi-card.warn { border-color: rgba(255,77,77,0.28); }
+  .kpi-card.good { border-color: rgba(61,220,132,0.22); }
+
+  .kpi-label { font-size: 9px; color: var(--muted); letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 9px; }
+  .kpi-value { font-family: 'Bebas Neue', sans-serif; font-size: 34px; letter-spacing: 1px; line-height: 1; }
+  .kpi-sub { margin-top: 7px; display: flex; align-items: center; gap: 6px; font-size: 11px; }
+  .kpi-context { color: var(--muted); font-size: 11px; }
+
+  .delta { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 4px; }
+  .delta.pos { color: var(--green); background: rgba(61,220,132,0.11); }
+  .delta.neg { color: var(--red); background: rgba(255,77,77,0.11); }
+  .delta.flat { color: var(--amber); background: rgba(255,170,0,0.11); }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .card-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .card-title { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text); }
+  .card-badge { font-size: 10px; padding: 3px 8px; border-radius: 20px; font-family: 'JetBrains Mono', monospace; }
+  .card-badge.warn { background: rgba(255,77,77,0.13); color: var(--red); }
+  .card-badge.ok { background: rgba(61,220,132,0.11); color: var(--green); }
+  .card-badge.neutral { background: var(--surface2); color: var(--muted); }
+  .card-badge.amber { background: rgba(255,170,0,0.12); color: var(--amber); }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+  .two-thirds { display: grid; grid-template-columns: 2fr 1fr; gap: 11px; }
+  .mt14 { margin-top: 14px; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 9px 18px; text-align: left; font-size: 9px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; font-weight: 500; border-bottom: 1px solid var(--border); }
+  td { padding: 11px 18px; font-size: 13px; border-bottom: 1px solid #161616; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.018); }
+  .mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+
+  .progress-bar { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 2px; }
+
+  /* ---- EVENT ROWS ---- */
+  .event-row { display: flex; align-items: center; padding: 13px 18px; border-bottom: 1px solid #161616; gap: 14px; }
+  .event-row:last-child { border-bottom: none; }
+  .event-date { width: 50px; text-align: center; flex-shrink: 0; }
+  .event-date-day { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--accent); line-height: 1; }
+  .event-date-month { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; }
+  .event-divider { width: 1px; height: 36px; background: var(--border); flex-shrink: 0; }
+  .event-info { flex: 1; }
+  .event-name { font-weight: 600; font-size: 13px; margin-bottom: 1px; }
+  .event-meta { font-size: 11px; color: var(--muted); }
+  .event-metrics { display: flex; gap: 18px; }
+  .event-metric-val { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; }
+  .event-metric-label { font-size: 10px; color: var(--muted); }
+
+  /* ---- MENU MATRIX ---- */
+  .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); }
+  .menu-quadrant { background: var(--surface); padding: 15px 17px; min-height: 130px; }
+  .quad-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; font-weight: 700; }
+  .quad-label.star { color: var(--green); }
+  .quad-label.plow { color: var(--accent); }
+  .quad-label.puzzle { color: var(--accent2); }
+  .quad-label.dog { color: var(--muted); }
+  .menu-pill { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 11px; margin: 2px 2px 2px 0; }
+  .menu-pill.star { background: rgba(61,220,132,0.09); color: var(--green); }
+  .menu-pill.plow { background: rgba(232,200,74,0.09); color: var(--accent); }
+  .menu-pill.puzzle { background: rgba(255,92,53,0.09); color: var(--accent2); }
+  .menu-pill.dog { background: rgba(107,107,107,0.09); color: var(--muted); }
+
+  /* ---- HEALTH SCORE ---- */
+  .health-ring { display: flex; align-items: center; gap: 18px; padding: 18px; }
+  .ring-visual { width: 76px; height: 76px; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative; flex-shrink: 0; }
+  .ring-inner { width: 58px; height: 58px; border-radius: 50%; background: var(--surface); display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 20px; position: relative; z-index: 1; }
+  .health-items { flex: 1; }
+  .health-item { display: flex; align-items: center; justify-content: space-between; padding: 3px 0; font-size: 12px; }
+  .health-item-label { color: var(--muted); }
+  .health-item-val { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+  .health-item-val.ok { color: var(--green); }
+  .health-item-val.warn { color: var(--amber); }
+  .health-item-val.bad { color: var(--red); }
+
+  /* ---- CHART BARS ---- */
+  .chart-area { padding: 18px 18px 0; height: 150px; display: flex; align-items: flex-end; gap: 5px; }
+  .chart-bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
+  .chart-bar { width: 100%; border-radius: 3px 3px 0 0; }
+  .chart-label { font-size: 8px; color: var(--muted); margin-top: 5px; letter-spacing: 0.3px; }
+  .chart-legend { display: flex; gap: 14px; padding: 10px 18px 14px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+  /* ---- DELIVERY ---- */
+  .delivery-stat { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid #161616; }
+  .delivery-stat:last-child { border-bottom: none; }
+  .delivery-stat-label { font-size: 12px; color: var(--muted); }
+  .delivery-stat-val { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+
+  /* ---- VENDING ---- */
+  .vending-item { display: flex; align-items: center; padding: 11px 18px; border-bottom: 1px solid #161616; gap: 12px; }
+  .vending-item:last-child { border-bottom: none; }
+  .vending-rank { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--muted); width: 22px; }
+  .vending-name { flex: 1; font-size: 13px; }
+  .vending-units { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
+  .vending-rev { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; margin-left: 16px; }
+
+  /* ---- PROMO ---- */
+  .promo-item { padding: 14px 18px; border-bottom: 1px solid #161616; }
+  .promo-item:last-child { border-bottom: none; }
+  .promo-name { font-weight: 600; font-size: 13px; margin-bottom: 2px; }
+  .promo-meta { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+  .promo-kpis { display: flex; gap: 18px; }
+  .promo-kpi-val { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; }
+  .promo-kpi-label { font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
+
+  /* ---- CONFIG NOTICE ---- */
+  .config-notice {
+    background: rgba(232,200,74,0.07);
+    border: 1px solid rgba(232,200,74,0.2);
+    border-radius: 8px; padding: 14px 18px;
+    margin-bottom: 20px; font-size: 12px; color: #c8a830; line-height: 1.7;
+  }
+  .config-notice code { background: rgba(232,200,74,0.12); padding: 1px 5px; border-radius: 3px; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+
+  /* ---- NO DATA STATE ---- */
+  .no-data { padding: 32px; text-align: center; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<!-- ==================== PASSWORD GATE ==================== -->
+<div id="gate">
+  <div class="gate-logo">KICKERS</div>
+  <div class="gate-sub">CEO Dashboard · Confidential</div>
+  <div class="gate-box">
+    <div class="gate-label">Enter Access Code</div>
+    <input class="gate-input" id="pwd-input" type="password" placeholder="••••••" maxlength="20" autocomplete="off">
+    <button class="gate-btn" onclick="checkPassword()">ENTER</button>
+    <div class="gate-error" id="pwd-error"></div>
+  </div>
+</div>
+
+<!-- ==================== LOADING ==================== -->
+<div id="loading">
+  <div class="spinner"></div>
+  <div class="loading-text">Loading data from Google Sheets…</div>
+</div>
+
+<!-- ==================== APP ==================== -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-wordmark">KICKERS</div>
+      <div class="logo-sub">CEO Dashboard</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">Overview</div>
+      <div class="nav-item active" onclick="showPage('overview')"><span class="nav-icon">◈</span> One-Pager</div>
+      <div class="nav-section">Business Units</div>
+      <div class="nav-item" onclick="showPage('bar')"><span class="nav-icon">🍺</span> Kickers Bar</div>
+      <div class="nav-item" onclick="showPage('cafe')"><span class="nav-icon">☕</span> Kick Cafe</div>
+      <div class="nav-item" onclick="showPage('garden')"><span class="nav-icon">🌿</span> Kickers Garden</div>
+      <div class="nav-section">Operations</div>
+      <div class="nav-item" onclick="showPage('menu')"><span class="nav-icon">◧</span> Menu Engineering</div>
+      <div class="nav-item" onclick="showPage('events')"><span class="nav-icon">◷</span> Events</div>
+      <div class="nav-item" onclick="showPage('delivery')"><span class="nav-icon">⚡</span> Delivery</div>
+      <div class="nav-item" onclick="showPage('promos')"><span class="nav-icon">◉</span> Promos</div>
+      <div class="nav-section">Finance</div>
+      <div class="nav-item" onclick="showPage('finance')"><span class="nav-icon">◻</span> P&L vs Budget</div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sync-row">
+        <div class="sync-dot" id="sync-dot"></div>
+        <span id="sync-label">Live — Google Sheets</span>
+      </div>
+      <button class="refresh-btn" onclick="loadAllData()">↻ &nbsp;Refresh Data</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div class="page-title" id="page-title">OVERVIEW</div>
+      <div class="topbar-right">
+        <div class="period-toggle">
+          <button class="period-btn">WTD</button>
+          <button class="period-btn active">MTD</button>
+          <button class="period-btn">QTD</button>
+          <button class="period-btn">YTD</button>
+        </div>
+        <div class="last-updated" id="last-updated">—</div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- =========== OVERVIEW =========== -->
+      <div class="page active" id="page-overview">
+        <div class="config-notice" id="sheets-notice" style="display:none">
+          ⚠ Google Sheets not yet connected. See the <strong>SETUP GUIDE</strong> — paste your Sheet URL in <code>CONFIG.SHEETS_BASE_URL</code> at the top of this file. Data below is sample placeholder.
+        </div>
+
+        <div class="alert-bar" id="alert-bar">
+          <div class="alert-dot"></div>
+          <div class="alert-text" id="alert-text">Loading alerts…</div>
+        </div>
+
+        <div class="section-header">
+          <div class="section-title">CONSOLIDATED PERFORMANCE</div>
+          <div class="section-hint" id="period-label">April 2025</div>
+        </div>
+
+        <div class="kpi-grid" id="kpi-row1"></div>
+        <div class="kpi-grid mt14" id="kpi-row2"></div>
+
+        <div class="section-header">
+          <div class="section-title">BUSINESS UNIT BREAKDOWN</div>
+        </div>
+        <div class="card">
+          <table>
+            <thead>
+              <tr>
+                <th>Business Unit</th><th>Revenue</th><th>vs LM</th><th>vs Budget</th>
+                <th>Covers</th><th>Avg Check</th><th>Labor %</th><th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="bu-table"></tbody>
+          </table>
+        </div>
+
+        <div class="two-thirds mt14">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">13-Week Rolling Revenue</div>
+              <div class="card-badge neutral">All BUs Combined</div>
+            </div>
+            <div class="chart-area" id="chart-bars"></div>
+            <div class="chart-legend">
+              <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Kickers Bar</div>
+              <div class="legend-item"><div class="legend-dot" style="background:var(--accent3)"></div>Kick Cafe</div>
+              <div class="legend-item"><div class="legend-dot" style="background:var(--accent2)"></div>Garden</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Business Health Score</div>
+              <div class="card-badge amber" id="health-badge">—</div>
+            </div>
+            <div class="health-ring">
+              <div class="ring-visual" id="ring-visual">
+                <div class="ring-inner" id="ring-score">—</div>
+              </div>
+              <div class="health-items" id="health-items"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========== KICKERS BAR =========== -->
+      <div class="page" id="page-bar">
+        <div class="section-header"><div class="section-title">🍺 KICKERS BAR — DETAIL</div></div>
+        <div class="kpi-grid" id="bar-kpis"></div>
+      </div>
+
+      <!-- =========== KICK CAFE =========== -->
+      <div class="page" id="page-cafe">
+        <div class="section-header"><div class="section-title">☕ KICK CAFE + VENDING</div></div>
+        <div class="kpi-grid" id="cafe-kpis"></div>
+        <div class="section-header mt14"><div class="section-title">VENDING MACHINE SALES</div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Top Sellers — Vending</div><div class="card-badge ok" id="vending-total">—</div></div><div id="vending-list"></div></div>
+      </div>
+
+      <!-- =========== GARDEN =========== -->
+      <div class="page" id="page-garden">
+        <div class="section-header"><div class="section-title">🌿 KICKERS GARDEN — DETAIL</div></div>
+        <div class="kpi-grid" id="garden-kpis"></div>
+      </div>
+
+      <!-- =========== MENU ENGINEERING =========== -->
+      <div class="page" id="page-menu">
+        <div class="section-header"><div class="section-title">MENU ENGINEERING MATRIX</div></div>
+        <div class="two-col">
+          <div class="card">
+            <div class="card-header"><div class="card-title">BCG-Style Matrix</div><div class="card-badge neutral" id="menu-period">—</div></div>
+            <div class="menu-grid">
+              <div class="menu-quadrant"><div class="quad-label star">★ STARS — Keep & Promote</div><div id="menu-stars"></div></div>
+              <div class="menu-quadrant"><div class="quad-label plow">⟁ PLOWHORSES — Reprice</div><div id="menu-plows"></div></div>
+              <div class="menu-quadrant"><div class="quad-label puzzle">? PUZZLES — Reposition</div><div id="menu-puzzles"></div></div>
+              <div class="menu-quadrant"><div class="quad-label dog">✗ DOGS — Remove</div><div id="menu-dogs"></div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Top Items by Revenue</div><div class="card-badge neutral">This month</div></div>
+            <table><thead><tr><th>#</th><th>Item</th><th>Qty</th><th>Margin</th><th>Revenue</th></tr></thead>
+            <tbody id="menu-top-table"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========== EVENTS =========== -->
+      <div class="page" id="page-events">
+        <div class="section-header"><div class="section-title">EVENTS — PAST & PIPELINE</div></div>
+        <div class="two-col">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Past Events</div><div class="card-badge neutral" id="events-period">—</div></div>
+            <div id="past-events-list"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Upcoming Pipeline</div><div class="card-badge neutral">Next 30 days</div></div>
+            <div id="upcoming-events-list"></div>
+            <div style="padding:12px 18px;font-size:11px;color:var(--muted)">Pipeline total: <span style="color:var(--accent);font-family:'JetBrains Mono',monospace;font-weight:600;" id="pipeline-total">—</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========== DELIVERY =========== -->
+      <div class="page" id="page-delivery">
+        <div class="section-header"><div class="section-title">DELIVERY PERFORMANCE</div></div>
+        <div class="two-col">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Unit Economics</div><div class="card-badge warn" id="delivery-status">—</div></div>
+            <div style="padding:18px" id="delivery-economics"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Volume Metrics</div><div class="card-badge neutral">This month</div></div>
+            <div style="padding:18px" id="delivery-volume"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========== PROMOS =========== -->
+      <div class="page" id="page-promos">
+        <div class="section-header"><div class="section-title">SPECIAL OFFERS & PROMOTIONS</div></div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Active & Recent Promotions</div><div class="card-badge neutral" id="promos-period">—</div></div>
+          <div id="promos-list"></div>
+        </div>
+      </div>
+
+      <!-- =========== FINANCE =========== -->
+      <div class="page" id="page-finance">
+        <div class="section-header"><div class="section-title">P&L vs BUDGET</div></div>
+        <div class="two-col">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Income Statement</div><div class="card-badge neutral">Consolidated</div></div>
+            <table><thead><tr><th>Line Item</th><th>Actual</th><th>Budget</th><th>Variance</th><th>%</th></tr></thead>
+            <tbody id="pl-table"></tbody></table>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Budget Tracking</div><div class="card-badge neutral">% of budget spent</div></div>
+            <div style="padding:18px" id="budget-bars"></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </main>
+</div><!-- /app -->
+
+<script>
+/* ============================================================
+   ██████╗ ██████╗ ███╗   ██╗███████╗██╗ ██████╗
+  ██╔════╝██╔═══██╗████╗  ██║██╔════╝██║██╔════╝
+  ██║     ██║   ██║██╔██╗ ██║█████╗  ██║██║  ███╗
+  ██║     ██║   ██║██║╚██╗██║██╔══╝  ██║██║   ██║
+  ╚██████╗╚██████╔╝██║ ╚████║██║     ██║╚██████╔╝
+   ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝     ╚═╝ ╚═════╝
+
+  HOW TO CONNECT YOUR GOOGLE SHEET:
+  1. Open your Google Sheet
+  2. File → Share → Publish to web → Choose "Comma-separated values (.csv)"
+  3. Publish each tab separately and copy each URL
+  4. Paste the URLs below replacing the placeholder text
+  5. Upload this file to GitHub Pages (see SETUP GUIDE)
+============================================================ */
+const CONFIG = {
+  PASSWORD: "kick",   // ← Change this to your secret code
+
+  // ── PASTE YOUR GOOGLE SHEETS PUBLISHED CSV URLS BELOW ──
+  // Format: File > Share > Publish to web > select tab > CSV > copy link
+  SHEETS: {
+    overview:  "https://docs.google.com/spreadsheets/d/e/2PACX-1vTjqFvE2nd-hu2Njh2eFZFw_J5zw15s9dv4eoMZ3izSGx59ds6OVynleHvU9-TA7nphDr3SRwBbjukt/pub?gid=0&single=true&output=csv",
+    bar:       "https://docs.google.com/spreadsheets/d/e/2PACX-1vTjqFvE2nd-hu2Njh2eFZFw_J5zw15s9dv4eoMZ3izSGx59ds6OVynleHvU9-TA7nphDr3SRwBbjukt/pub?gid=37992416&single=true&output=csv",
+    cafe:      "YOUR_CAFE_TAB_CSV_URL_HERE",
+    garden:    "YOUR_GARDEN_TAB_CSV_URL_HERE",
+    menu:      "YOUR_MENU_TAB_CSV_URL_HERE",
+    events:    "YOUR_EVENTS_TAB_CSV_URL_HERE",
+    delivery:  "YOUR_DELIVERY_TAB_CSV_URL_HERE",
+    promos:    "YOUR_PROMOS_TAB_CSV_URL_HERE",
+    finance:   "YOUR_FINANCE_TAB_CSV_URL_HERE",
+    chart:     "YOUR_CHART_TAB_CSV_URL_HERE",
+    vending:   "YOUR_VENDING_TAB_CSV_URL_HERE",
+  }
+};
+
+/* ============================================================
+   SAMPLE DATA (used when Sheets not yet connected)
+   Replace with your real Google Sheets URLs above.
+============================================================ */
+const SAMPLE = {
+  overview: {
+    period: "April 2025",
+    total_revenue: 94200, total_revenue_vs_lm: 11.4, total_revenue_vs_budget: 4.7,
+    gross_margin: 61.3, gross_margin_vs_budget: -0.8,
+    labor_pct: 34.1, labor_target: 28,
+    net_profit: 8600, net_profit_vs_budget: -18,
+    avg_check: 23.4, avg_check_vs_lm: 1.8,
+    total_covers: 4024, covers_vs_lm: 9.2,
+    revpash: 18.7, revpash_vs_target: -2.1,
+    event_revenue: 14100, event_count: 3,
+    alert: "Labor cost at 34% vs 28% target. Delivery net margin at –12%.",
+    health_score: 68,
+  },
+  bu: [
+    { name: "Kickers Bar", color: "#e8c84a", revenue: 56800, vs_lm: 13, vs_budget: 4, covers: 2420, avg_check: 23.5, labor_pct: 36, status: "Watch" },
+    { name: "Kick Cafe + Vending", color: "#4ac9e8", revenue: 23300, vs_lm: 7, vs_budget: -2, covers: 1260, avg_check: 17.8, labor_pct: 29, status: "On Track" },
+    { name: "Kickers Garden", color: "#ff5c35", revenue: 14100, vs_lm: 24, vs_budget: 11, covers: 344, avg_check: 41.0, labor_pct: 24, status: "Strong" },
+  ],
+  chart: [
+    {week:"W1",rev:58},{week:"W2",rev:62},{week:"W3",rev:55},{week:"W4",rev:70},
+    {week:"W5",rev:68},{week:"W6",rev:72},{week:"W7",rev:65},{week:"W8",rev:80},
+    {week:"W9",rev:75},{week:"W10",rev:82},{week:"W11",rev:88},{week:"W12",rev:84},{week:"W13",rev:94},
+  ],
+  bar: { revenue: 56800, vs_lm: 13, vs_budget: 4, covers: 2420, avg_check: 23.5, labor_pct: 36, revpash: 17.2 },
+  cafe: { revenue: 19800, vs_lm: 6, vending_revenue: 3500, vending_vs_lm: 12, covers: 1260, avg_check: 17.8, labor_pct: 29 },
+  garden: { revenue: 14100, vs_lm: 24, vs_budget: 11, avg_check: 41.0, labor_pct: 24, events: 3 },
+  vending: [
+    { rank:1, name:"Red Bull 250ml", units:142, revenue:426 },
+    { rank:2, name:"Coke 330ml", units:130, revenue:325 },
+    { rank:3, name:"Snickers Bar", units:115, revenue:230 },
+    { rank:4, name:"Water 500ml", units:110, revenue:165 },
+    { rank:5, name:"Lay's Classic", units:98, revenue:196 },
+  ],
+  menu: {
+    period: "April 2025",
+    stars: ["Craft Burger","Kickers Wings","House IPA","Nachos Deluxe"],
+    plows: ["Classic Fries","Lager Draft","Caesar Salad"],
+    puzzles: ["Wagyu Sliders","Truffle Mac","Craft Cocktail #3"],
+    dogs: ["Veggie Wrap","Kids Pasta","Diet Soda"],
+    top: [
+      {name:"Craft Burger",qty:312,margin:68,revenue:8400},
+      {name:"Kickers Wings",qty:284,margin:72,revenue:7100},
+      {name:"House IPA",qty:621,margin:81,revenue:6800},
+      {name:"Lager Draft",qty:580,margin:44,revenue:5800},
+      {name:"Nachos Deluxe",qty:201,margin:65,revenue:4200},
+      {name:"Classic Fries",qty:490,margin:38,revenue:3900},
+      {name:"Wagyu Sliders",qty:88,margin:71,revenue:3500},
+      {name:"Caesar Salad",qty:210,margin:40,revenue:3100},
+    ]
+  },
+  events: {
+    period: "April 2025",
+    past: [
+      { day:5, month:"Apr", name:"Corporate Buy-Out — TechCorp", meta:"Garden · Full venue · 80 pax", revenue:6200, avg_check:77.5 },
+      { day:13, month:"Apr", name:"Birthday Party — Private", meta:"Bar · Side room · 35 pax", revenue:3800, avg_check:108.6 },
+      { day:26, month:"Apr", name:"Live Jazz Night", meta:"Bar · Full venue · 110 pax", revenue:4100, avg_check:37.3 },
+    ],
+    upcoming: [
+      { day:10, month:"May", name:"Wedding Reception", meta:"Garden · Full venue · 120 pax", projected:9800 },
+      { day:18, month:"May", name:"Trivia Night Series #3", meta:"Bar · Regular · ~90 pax", projected:3200 },
+    ],
+    pipeline_total: 13000,
+  },
+  delivery: {
+    gross_revenue: 4820, agg_fees: -1350, packaging: -290, cogs: -2760, net: -580, net_pct: -12,
+    orders: 214, orders_vs_lm: -8, avg_order: 22.5,
+    status: "Unprofitable",
+  },
+  promos: {
+    period: "April 2025",
+    items: [
+      { name:"Happy Hour 4–7PM", meta:"Daily · Bar", revenue:8400, redemptions:312, avg_check:18.2, uplift: 12 },
+      { name:"Wing Wednesday", meta:"Every Wed · Bar + Cafe", revenue:4200, redemptions:180, avg_check:23.4, uplift: 8 },
+      { name:"Garden Brunch Package", meta:"Weekends · Garden", revenue:3100, redemptions:44, avg_check:70.5, uplift: 22 },
+    ]
+  },
+  finance: {
+    rows: [
+      { label:"Total Revenue", actual:94200, budget:90000, is_header:true },
+      { label:"↳ COGS", actual:36500, budget:33300, is_cost:true },
+      { label:"Gross Profit", actual:57700, budget:56700, is_header:true },
+      { label:"↳ Salaries", actual:32100, budget:25200, is_cost:true },
+      { label:"↳ Rent & Utilities", actual:9800, budget:9800, is_cost:true },
+      { label:"↳ Marketing", actual:2400, budget:3000, is_cost:true },
+      { label:"↳ Other OPEX", actual:4800, budget:9200, is_cost:true },
+      { label:"Net Profit", actual:8600, budget:10500, is_header:true, is_final:true },
+    ],
+    budget_bars: [
+      { label:"Salaries", pct:127, color:"var(--red)" },
+      { label:"COGS", pct:110, color:"var(--amber)" },
+      { label:"Marketing", pct:80, color:"var(--green)" },
+      { label:"Rent & Utilities", pct:100, color:"var(--muted)" },
+      { label:"Other OPEX", pct:52, color:"var(--green)" },
+    ]
+  }
+};
+
+/* ============================================================
+   PASSWORD
+============================================================ */
+document.getElementById('pwd-input').addEventListener('keydown', e => { if(e.key === 'Enter') checkPassword(); });
+function checkPassword() {
+  const val = document.getElementById('pwd-input').value.trim();
+  if (val === CONFIG.PASSWORD) {
+    document.getElementById('gate').style.display = 'none';
+    initApp();
+  } else {
+    document.getElementById('pwd-error').textContent = 'Incorrect code. Try again.';
+    document.getElementById('pwd-input').value = '';
+  }
+}
+
+/* ============================================================
+   INIT
+============================================================ */
+function initApp() {
+  document.getElementById('app').style.display = 'flex';
+  loadAllData();
+}
+
+async function loadAllData() {
+  const sheetsReady = Object.values(CONFIG.SHEETS).every(v => !v.includes('YOUR_'));
+
+  if (!sheetsReady) {
+    document.getElementById('sheets-notice').style.display = 'block';
+    document.getElementById('sync-dot').classList.add('error');
+    document.getElementById('sync-label').textContent = 'Sample data — Sheets not connected';
+    renderAll(SAMPLE);
+  } else {
+    document.getElementById('loading').style.display = 'flex';
+    try {
+      const data = await fetchSheetsData();
+      renderAll(data);
+      document.getElementById('sync-dot').classList.remove('error');
+      document.getElementById('sync-label').textContent = 'Live — Google Sheets';
+    } catch(e) {
+      console.error(e);
+      document.getElementById('sync-dot').classList.add('error');
+      document.getElementById('sync-label').textContent = 'Fetch error — using sample';
+      renderAll(SAMPLE);
+    }
+    document.getElementById('loading').style.display = 'none';
+  }
+  document.getElementById('last-updated').textContent = 'Updated: ' + new Date().toLocaleString('en-US', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+/* ============================================================
+   GOOGLE SHEETS FETCHER
+   Reads published CSV tabs and maps columns by header name.
+============================================================ */
+async function fetchSheetsData() {
+  async function fetchCSV(url) {
+    const res = await fetch(url);
+    const text = await res.text();
+    return parseCSV(text);
+  }
+
+  function parseCSV(text) {
+    const lines = text.trim().split('\n').map(l => l.split(',').map(c => c.trim().replace(/^"|"$/g,'')));
+    const headers = lines[0];
+    return lines.slice(1).map(row => {
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = isNaN(row[i]) || row[i]==='' ? row[i] : parseFloat(row[i]); });
+      return obj;
+    });
+  }
+
+  // Each tab returns rows; first row = headers, subsequent = data
+  // We map the raw rows into the SAMPLE-compatible structure
+  const [ov, bu, ch, barD, cafeD, gardenD, menuD, evD, delD, promosD, finD, vendD] = await Promise.all([
+    fetchCSV(CONFIG.SHEETS.overview),
+    fetchCSV(CONFIG.SHEETS.overview),  // BU section comes from same tab (rows 2+)
+    fetchCSV(CONFIG.SHEETS.chart),
+    fetchCSV(CONFIG.SHEETS.bar),
+    fetchCSV(CONFIG.SHEETS.cafe),
+    fetchCSV(CONFIG.SHEETS.garden),
+    fetchCSV(CONFIG.SHEETS.menu),
+    fetchCSV(CONFIG.SHEETS.events),
+    fetchCSV(CONFIG.SHEETS.delivery),
+    fetchCSV(CONFIG.SHEETS.promos),
+    fetchCSV(CONFIG.SHEETS.finance),
+    fetchCSV(CONFIG.SHEETS.vending),
+  ]);
+
+  // Map overview (first row = KPIs as key:value pairs)
+  const ovRow = ov[0] || {};
+
+  return {
+    overview: {
+      period: ovRow.period || '',
+      total_revenue: +ovRow.total_revenue||0, total_revenue_vs_lm: +ovRow.total_revenue_vs_lm||0, total_revenue_vs_budget: +ovRow.total_revenue_vs_budget||0,
+      gross_margin: +ovRow.gross_margin||0, gross_margin_vs_budget: +ovRow.gross_margin_vs_budget||0,
+      labor_pct: +ovRow.labor_pct||0, labor_target: +ovRow.labor_target||28,
+      net_profit: +ovRow.net_profit||0, net_profit_vs_budget: +ovRow.net_profit_vs_budget||0,
+      avg_check: +ovRow.avg_check||0, avg_check_vs_lm: +ovRow.avg_check_vs_lm||0,
+      total_covers: +ovRow.total_covers||0, covers_vs_lm: +ovRow.covers_vs_lm||0,
+      revpash: +ovRow.revpash||0, revpash_vs_target: +ovRow.revpash_vs_target||0,
+      event_revenue: +ovRow.event_revenue||0, event_count: +ovRow.event_count||0,
+      alert: ovRow.alert||'',
+      health_score: +ovRow.health_score||0,
+    },
+    bu: bu.filter(r=>r.name).map(r=>({
+      name:r.name, color:r.color||'#e8c84a', revenue:+r.revenue||0, vs_lm:+r.vs_lm||0,
+      vs_budget:+r.vs_budget||0, covers:+r.covers||0, avg_check:+r.avg_check||0,
+      labor_pct:+r.labor_pct||0, status:r.status||''
+    })),
+    chart: ch.map(r=>({week:r.week, rev:+r.rev||0})),
+    bar: barD[0]||{},
+    cafe: cafeD[0]||{},
+    garden: gardenD[0]||{},
+    vending: vendD.map((r,i)=>({rank:i+1, name:r.name, units:+r.units||0, revenue:+r.revenue||0})),
+    menu: {
+      period: menuD[0]&&menuD[0].period||'',
+      stars: menuD.filter(r=>r.category==='star').map(r=>r.item),
+      plows: menuD.filter(r=>r.category==='plow').map(r=>r.item),
+      puzzles: menuD.filter(r=>r.category==='puzzle').map(r=>r.item),
+      dogs: menuD.filter(r=>r.category==='dog').map(r=>r.item),
+      top: menuD.filter(r=>r.qty).map(r=>({name:r.item,qty:+r.qty||0,margin:+r.margin||0,revenue:+r.revenue||0})).sort((a,b)=>b.revenue-a.revenue).slice(0,10),
+    },
+    events: {
+      period: evD[0]&&evD[0].period||'',
+      past: evD.filter(r=>r.type==='past').map(r=>({day:+r.day,month:r.month,name:r.name,meta:r.meta,revenue:+r.revenue||0,avg_check:+r.avg_check||0})),
+      upcoming: evD.filter(r=>r.type==='upcoming').map(r=>({day:+r.day,month:r.month,name:r.name,meta:r.meta,projected:+r.projected||0})),
+      pipeline_total: evD.filter(r=>r.type==='upcoming').reduce((s,r)=>s+(+r.projected||0),0),
+    },
+    delivery: delD[0]||{},
+    promos: { period: promosD[0]&&promosD[0].period||'', items: promosD.map(r=>({name:r.name,meta:r.meta,revenue:+r.revenue||0,redemptions:+r.redemptions||0,avg_check:+r.avg_check||0,uplift:+r.uplift||0})) },
+    finance: {
+      rows: finD.map(r=>({label:r.label,actual:+r.actual||0,budget:+r.budget||0,is_header:r.is_header==='true'||r.is_header==='1',is_cost:r.is_cost==='true'||r.is_cost==='1',is_final:r.is_final==='true'||r.is_final==='1'})),
+      budget_bars: SAMPLE.finance.budget_bars, // derive from same data if needed
+    }
+  };
+}
+
+/* ============================================================
+   RENDER ENGINE
+============================================================ */
+function renderAll(d) {
+  renderOverview(d);
+  renderBar(d.bar);
+  renderCafe(d.cafe, d.vending);
+  renderGarden(d.garden);
+  renderMenu(d.menu);
+  renderEvents(d.events);
+  renderDelivery(d.delivery);
+  renderPromos(d.promos);
+  renderFinance(d.finance);
+}
+
+function fmt(n) { return '$' + Math.abs(n).toLocaleString('en-US', {maximumFractionDigits:0}); }
+function pct(n) { return (n > 0 ? '+' : '') + n.toFixed(1) + '%'; }
+function delta(val, label) {
+  const cls = val > 0 ? 'pos' : val < 0 ? 'neg' : 'flat';
+  return `<span class="delta ${cls}">${pct(val)}</span><span class="kpi-context">${label}</span>`;
+}
+function kpiCard(label, value, sub1, sub2='', warn=false, good=false) {
+  return `<div class="kpi-card ${warn?'warn':''} ${good?'good':''}">
+    <div class="kpi-label">${label}</div>
+    <div class="kpi-value">${value}</div>
+    <div class="kpi-sub">${sub1}</div>
+    ${sub2 ? `<div class="kpi-sub" style="margin-top:2px">${sub2}</div>` : ''}
+  </div>`;
+}
+
+function renderOverview(d) {
+  const ov = d.overview;
+  document.getElementById('period-label').textContent = ov.period;
+  document.getElementById('alert-text').innerHTML = `<strong>Alerts:</strong> ${ov.alert}`;
+
+  document.getElementById('kpi-row1').innerHTML =
+    kpiCard('Total Revenue', fmt(ov.total_revenue), delta(ov.total_revenue_vs_lm, 'vs last month'), delta(ov.total_revenue_vs_budget, 'vs budget'), false, ov.total_revenue_vs_lm > 0) +
+    kpiCard('Gross Margin', ov.gross_margin + '%', delta(ov.gross_margin_vs_budget, 'vs budget')) +
+    kpiCard('Labor Cost %', ov.labor_pct + '%', delta(ov.labor_pct - ov.labor_target, 'vs ' + ov.labor_target + '% target'), '', ov.labor_pct > ov.labor_target) +
+    kpiCard('Net Profit', fmt(ov.net_profit), delta(ov.net_profit_vs_budget, 'vs budget'), '', ov.net_profit_vs_budget < -10);
+
+  document.getElementById('kpi-row2').innerHTML =
+    kpiCard('Avg Check', '$' + ov.avg_check.toFixed(1), `<span class="delta pos">+$${ov.avg_check_vs_lm.toFixed(1)}</span><span class="kpi-context">vs last month</span>`) +
+    kpiCard('Total Covers', ov.total_covers.toLocaleString(), delta(ov.covers_vs_lm, 'vs last month')) +
+    kpiCard('RevPASH', '$' + ov.revpash.toFixed(1), delta(ov.revpash_vs_target, 'vs target')) +
+    kpiCard('Event Revenue', fmt(ov.event_revenue), `<span class="delta pos">${ov.event_count} events</span><span class="kpi-context">this month</span>`);
+
+  // BU table
+  document.getElementById('bu-table').innerHTML = d.bu.map(b => {
+    const lmCls = b.vs_lm > 0 ? 'pos' : 'neg';
+    const budCls = b.vs_budget > 0 ? 'pos' : b.vs_budget < -5 ? 'neg' : 'flat';
+    const laborCls = b.labor_pct > 32 ? 'neg' : b.labor_pct < 28 ? 'pos' : 'flat';
+    const stCls = b.status === 'Strong' ? 'ok' : b.status === 'Watch' ? 'warn' : 'neutral';
+    return `<tr>
+      <td><span style="color:${b.color}">●</span> &nbsp;${b.name}</td>
+      <td class="mono">${fmt(b.revenue)}</td>
+      <td><span class="delta ${lmCls}">${pct(b.vs_lm)}</span></td>
+      <td><span class="delta ${budCls}">${pct(b.vs_budget)}</span></td>
+      <td class="mono">${b.covers.toLocaleString()}</td>
+      <td class="mono">$${b.avg_check.toFixed(1)}</td>
+      <td><span class="delta ${laborCls}">${b.labor_pct}%</span></td>
+      <td><span class="card-badge ${stCls}">${b.status}</span></td>
+    </tr>`;
+  }).join('');
+
+  // Chart
+  const chartEl = document.getElementById('chart-bars');
+  chartEl.innerHTML = '';
+  const maxRev = Math.max(...d.chart.map(c => c.rev));
+  d.chart.forEach((w, i) => {
+    const g = document.createElement('div'); g.className = 'chart-bar-group';
+    const bar = document.createElement('div'); bar.className = 'chart-bar';
+    bar.style.height = '0px';
+    bar.style.background = i === d.chart.length - 1 ? 'var(--accent)' : 'rgba(232,200,74,0.32)';
+    const lbl = document.createElement('div'); lbl.className = 'chart-label'; lbl.textContent = w.week;
+    g.appendChild(bar); g.appendChild(lbl); chartEl.appendChild(g);
+    setTimeout(() => { bar.style.height = Math.round((w.rev / maxRev) * 110) + 'px'; bar.style.transition = 'height 0.7s cubic-bezier(.175,.885,.32,1.275)'; }, 80 + i * 35);
+  });
+
+  // Health score
+  const score = d.overview.health_score;
+  const scoreCls = score >= 80 ? 'ok' : score >= 60 ? 'warn' : 'bad';
+  const scoreColor = score >= 80 ? 'var(--green)' : score >= 60 ? 'var(--amber)' : 'var(--red)';
+  document.getElementById('health-badge').textContent = score + ' / 100';
+  document.getElementById('ring-score').textContent = score;
+  document.getElementById('ring-score').style.color = scoreColor;
+  document.getElementById('ring-visual').style.background = `conic-gradient(${scoreColor} 0% ${score}%, var(--border) ${score}% 100%)`;
+
+  const healthChecks = [
+    { label: 'Revenue growth', val: d.overview.total_revenue_vs_lm > 0 ? '✓ OK' : '✕ Down', cls: d.overview.total_revenue_vs_lm > 0 ? 'ok' : 'bad' },
+    { label: 'Gross margin', val: d.overview.gross_margin_vs_budget >= 0 ? '✓ On target' : `⚠ ${d.overview.gross_margin_vs_budget}pp`, cls: d.overview.gross_margin_vs_budget >= 0 ? 'ok' : 'warn' },
+    { label: 'Labor cost', val: d.overview.labor_pct <= d.overview.labor_target ? '✓ OK' : '✕ High', cls: d.overview.labor_pct <= d.overview.labor_target ? 'ok' : 'bad' },
+    { label: 'Avg check trend', val: d.overview.avg_check_vs_lm >= 0 ? '✓ Rising' : '⚠ Falling', cls: d.overview.avg_check_vs_lm >= 0 ? 'ok' : 'warn' },
+    { label: 'Delivery P&L', val: (d.delivery.net_pct||d.delivery.net < 0) ? '✕ Negative' : '✓ Positive', cls: (d.delivery.net < 0) ? 'bad' : 'ok' },
+  ];
+  document.getElementById('health-items').innerHTML = healthChecks.map(h =>
+    `<div class="health-item"><span class="health-item-label">${h.label}</span><span class="health-item-val ${h.cls}">${h.val}</span></div>`
+  ).join('');
+}
+
+function renderBar(b) {
+  document.getElementById('bar-kpis').innerHTML =
+    kpiCard('Revenue', fmt(b.revenue||0), delta(b.vs_lm||0, 'vs last month')) +
+    kpiCard('Labor %', (b.labor_pct||0)+'%', delta((b.labor_pct||0)-28, 'vs 28% target'), '', (b.labor_pct||0) > 30) +
+    kpiCard('Covers', (b.covers||0).toLocaleString(), delta(b.vs_lm||0, 'vs last month')) +
+    kpiCard('Avg Check', '$'+(b.avg_check||0).toFixed(1), delta(b.avg_check_vs_lm||0, 'vs last month'));
+}
+
+function renderCafe(c, vending) {
+  document.getElementById('cafe-kpis').innerHTML =
+    kpiCard('Cafe Revenue', fmt(c.revenue||0), delta(c.vs_lm||0, 'vs last month'), '', false, true) +
+    kpiCard('Vending Revenue', fmt(c.vending_revenue||0), delta(c.vending_vs_lm||0, 'vs last month'), '', false, true) +
+    kpiCard('Covers', (c.covers||0).toLocaleString(), delta(c.covers_vs_lm||0, 'vs last month')) +
+    kpiCard('Labor %', (c.labor_pct||0)+'%', delta((c.labor_pct||0)-28, 'vs target'), '', (c.labor_pct||0) > 30);
+  document.getElementById('vending-total').textContent = fmt((c.vending_revenue||0)) + ' this month';
+  document.getElementById('vending-list').innerHTML = (vending||[]).map(v =>
+    `<div class="vending-item"><div class="vending-rank">${v.rank}</div><div class="vending-name">${v.name}</div><div class="vending-units">${v.units} units</div><div class="vending-rev">${fmt(v.revenue)}</div></div>`
+  ).join('');
+}
+
+function renderGarden(g) {
+  document.getElementById('garden-kpis').innerHTML =
+    kpiCard('Revenue', fmt(g.revenue||0), delta(g.vs_lm||0, 'vs last month'), '', false, true) +
+    kpiCard('Avg Check', '$'+(g.avg_check||0).toFixed(1), `<span class="delta pos">Highest BU</span>`, '', false, true) +
+    kpiCard('Labor %', (g.labor_pct||0)+'%', `<span class="delta pos">Below target</span>`, '', false, (g.labor_pct||0) < 28) +
+    kpiCard('Events Run', g.events||0, `<span class="delta pos">+1 vs last month</span>`);
+}
+
+function renderMenu(m) {
+  document.getElementById('menu-period').textContent = m.period||'';
+  const pill = (item, cls) => `<span class="menu-pill ${cls}">${item}</span>`;
+  document.getElementById('menu-stars').innerHTML = (m.stars||[]).map(i=>pill(i,'star')).join('');
+  document.getElementById('menu-plows').innerHTML = (m.plows||[]).map(i=>pill(i,'plow')).join('');
+  document.getElementById('menu-puzzles').innerHTML = (m.puzzles||[]).map(i=>pill(i,'puzzle')).join('');
+  document.getElementById('menu-dogs').innerHTML = (m.dogs||[]).map(i=>pill(i,'dog')).join('');
+  document.getElementById('menu-top-table').innerHTML = (m.top||[]).map((item,i) => {
+    const mCls = item.margin >= 65 ? 'pos' : item.margin >= 50 ? 'flat' : 'neg';
+    return `<tr><td class="mono">${i+1}</td><td>${item.name}</td><td class="mono">${item.qty}</td><td><span class="delta ${mCls}">${item.margin}%</span></td><td class="mono">${fmt(item.revenue)}</td></tr>`;
+  }).join('');
+}
+
+function renderEvents(ev) {
+  document.getElementById('events-period').textContent = ev.period||'';
+  document.getElementById('past-events-list').innerHTML = (ev.past||[]).map(e =>
+    `<div class="event-row">
+      <div class="event-date"><div class="event-date-day">${e.day}</div><div class="event-date-month">${e.month}</div></div>
+      <div class="event-divider"></div>
+      <div class="event-info"><div class="event-name">${e.name}</div><div class="event-meta">${e.meta}</div></div>
+      <div class="event-metrics"><div><div class="event-metric-val">${fmt(e.revenue)}</div><div class="event-metric-label">Revenue</div></div><div><div class="event-metric-val">$${e.avg_check.toFixed(1)}</div><div class="event-metric-label">Avg Check</div></div></div>
+    </div>`
+  ).join('') || '<div class="no-data">No past events this period</div>';
+
+  document.getElementById('upcoming-events-list').innerHTML = (ev.upcoming||[]).map(e =>
+    `<div class="event-row">
+      <div class="event-date"><div class="event-date-day">${e.day}</div><div class="event-date-month">${e.month}</div></div>
+      <div class="event-divider"></div>
+      <div class="event-info"><div class="event-name">${e.name}</div><div class="event-meta">${e.meta}</div></div>
+      <div class="event-metrics"><div><div class="event-metric-val" style="color:var(--accent3)">${fmt(e.projected)}</div><div class="event-metric-label">Projected</div></div></div>
+    </div>`
+  ).join('') || '<div class="no-data">No upcoming events</div>';
+
+  document.getElementById('pipeline-total').textContent = fmt(ev.pipeline_total||0) + ' projected';
+}
+
+function renderDelivery(d) {
+  document.getElementById('delivery-status').textContent = d.net < 0 ? 'Unprofitable' : 'Profitable';
+  document.getElementById('delivery-economics').innerHTML = `
+    ${delivStat('Gross delivery revenue', fmt(d.gross_revenue||0), '')}
+    ${delivStat('Aggregator fees', fmt(-(d.agg_fees||0)), 'var(--red)')}
+    ${delivStat('Packaging costs', fmt(-(d.packaging||0)), 'var(--red)')}
+    ${delivStat('COGS', fmt(-(d.cogs||0)), 'var(--red)')}
+    <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:12px">
+      ${delivStat('Net delivery margin', fmt(d.net||0) + ' (' + (d.net_pct||0) + '%)', d.net < 0 ? 'var(--red)' : 'var(--green)')}
+    </div>
+    ${d.net < 0 ? `<div style="margin-top:16px;padding:12px;background:rgba(255,77,77,0.06);border:1px solid rgba(255,77,77,0.18);border-radius:8px;font-size:12px;color:#ff8080;line-height:1.7"><strong>Recommendation:</strong> Raise delivery prices 12–15%, renegotiate aggregator fee, or pause channel for 30-day test.</div>` : ''}
+  `;
+  document.getElementById('delivery-volume').innerHTML = `
+    <div class="kpi-label" style="margin-bottom:4px">Total Orders</div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:38px;line-height:1;margin-bottom:6px">${d.orders||0}</div>
+    <div style="margin-bottom:20px">${delta(d.orders_vs_lm||0, 'vs last month')}</div>
+    <div class="kpi-label" style="margin-bottom:4px">Avg Order Value</div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:38px;line-height:1;margin-bottom:4px">$${(d.avg_order||0).toFixed(1)}</div>
+  `;
+}
+function delivStat(label, val, color) {
+  return `<div class="delivery-stat"><div class="delivery-stat-label">${label}</div><div class="delivery-stat-val mono" style="color:${color||'var(--text)'}">${val}</div></div>`;
+}
+
+function renderPromos(p) {
+  document.getElementById('promos-period').textContent = p.period||'';
+  document.getElementById('promos-list').innerHTML = (p.items||[]).map(pr =>
+    `<div class="promo-item">
+      <div class="promo-name">${pr.name}</div>
+      <div class="promo-meta">${pr.meta}</div>
+      <div class="promo-kpis">
+        <div class="promo-kpi"><div class="promo-kpi-val">${fmt(pr.revenue)}</div><div class="promo-kpi-label">Revenue</div></div>
+        <div class="promo-kpi"><div class="promo-kpi-val">${pr.redemptions}</div><div class="promo-kpi-label">Redemptions</div></div>
+        <div class="promo-kpi"><div class="promo-kpi-val">$${(pr.avg_check||0).toFixed(1)}</div><div class="promo-kpi-label">Avg Check</div></div>
+        <div class="promo-kpi"><div class="promo-kpi-val" style="color:var(--green)">+${pr.uplift}%</div><div class="promo-kpi-label">Uplift</div></div>
+      </div>
+    </div>`
+  ).join('') || '<div class="no-data">No promotions this period</div>';
+}
+
+function renderFinance(f) {
+  document.getElementById('pl-table').innerHTML = (f.rows||[]).map(r => {
+    const variance = r.is_cost ? -(r.actual - r.budget) : (r.actual - r.budget);
+    const varPct = r.budget ? ((variance / Math.abs(r.budget)) * 100) : 0;
+    const varColor = variance >= 0 ? 'var(--green)' : 'var(--red)';
+    const dCls = variance >= 0 ? 'pos' : 'neg';
+    return `<tr style="${r.is_final ? 'background:rgba(255,255,255,0.02)' : ''}">
+      <td style="${r.is_header ? 'font-weight:700' : 'padding-left:28px;color:var(--muted)'}">${r.label}</td>
+      <td class="mono" style="${r.is_final ? 'font-weight:700' : ''}">${fmt(r.actual)}</td>
+      <td class="mono" style="color:var(--muted)">${fmt(r.budget)}</td>
+      <td class="mono" style="color:${varColor}">${variance >= 0 ? '+' : ''}${fmt(Math.abs(variance)).replace('$','$' + (variance<0?'-':''))}</td>
+      <td><span class="delta ${dCls}">${varPct >= 0 ? '+' : ''}${varPct.toFixed(1)}%</span></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('budget-bars').innerHTML = (f.budget_bars||[]).map(b =>
+    `<div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px">
+        <span>${b.label}</span>
+        <span class="mono" style="color:${b.color}">${b.pct}% of budget</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(b.pct,100)}%;background:${b.color}"></div></div>
+    </div>`
+  ).join('');
+}
+
+/* ============================================================
+   NAV
+============================================================ */
+const pageTitles = {
+  overview:'OVERVIEW', bar:'KICKERS BAR', cafe:'KICK CAFE + VENDING',
+  garden:'KICKERS GARDEN', menu:'MENU ENGINEERING',
+  events:'EVENTS', delivery:'DELIVERY', promos:'PROMOS & OFFERS', finance:'P&L vs BUDGET'
+};
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(item => {
+    if (item.getAttribute('onclick') && item.getAttribute('onclick').includes("'" + name + "'")) item.classList.add('active');
+  });
+  document.getElementById('page-title').textContent = pageTitles[name] || '';
+}
+document.querySelectorAll('.period-btn').forEach(btn => {
+  btn.addEventListener('click', () => { document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); });
+});
+</script>
+</body>
+</html>
